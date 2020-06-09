@@ -44,11 +44,63 @@ This setup script will let Traefik running and listening for incoming requests o
 
 Traefik uses LetsEncrypt to automatically generated and renew TLS certificates for all domains is listening on.
 
+
+## DEPLOY SERVER EXAMPLE
+
+Let's see an example of deploying Python Shapes API backend into the `demo.approov.io`.
+
+#### Create the folder
+
+```
+mkdir -p ~/backend && cd ~/backend
+```
+
+#### Clone the repo
+
+```
+git clone --branch dev-deployment https://github.com/approov/python-flask_approov-shapes-api-server && cd python-flask_approov-shapes-api-server
+```
+
+#### Create the .env file
+
+```
+cp .env.example .env
+```
+
+#### Edit the .env file
+
+Replace the default domain with your own server domain:
+
+```bash
+PYTHON_FLASK_SHAPES_DOMAIN=your.domain.com
+```
+
+Replace the dummy Approov secret on it with the one for your Approov account:
+
+```bash
+# approov secret -get base64
+APPROOV_BASE64_SECRET=your-secret-here
+```
+
+#### Start the Docker Stack
+
+```
+sudo docker-compose up -d
+```
+
+Now in your browser visit `your.domain.com` to check the server is accepting requests.
+
+#### Tail the logs
+
+```
+sudo docker-compose logs -f
+```
+
 ## ADD A CONTAINER TO TRAEFIK
 
 Traefik inspects the labels in all running docker containers to know for what ones needs to proxy requests.
 
-Configure your `docker-compose.yml` service like:
+So if your backend does not have yet support for Traefik in the `docker-compose.yml` file you can configure your service like this:
 
 ```yml
 services:
