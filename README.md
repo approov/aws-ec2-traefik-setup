@@ -1,10 +1,46 @@
-# TRAEFIK ON AWS EC2
+# AWS EC2 TRAEFIK SETUP
 
 [Traefik](https://containo.us/traefik/) setup to run all docker containers on AWS EC2 instances behind the same port 80 and 443 with automated LetsEncrypt certificates creation and renewal.
 
-## AWS EC2 SETUP
 
-To configure a EC2 instance with Traefik, Docker, Docker Compose and Git, just run the bash script in the root of this repo:
+## CREATE A NEW AWS EC2 INSTANCE
+
+First of all create new AWS EC2 instance, otherwise you need to guarantee that the existing one doesn't have anything listening on port `80` or port `443`.
+
+Now grab the IP address for it in order to point a domain to it.
+
+
+## DOMAIN DNS SETUP
+
+Before starting the setup a domain needs to be set-ed to point at the EC2 instance.
+
+For example if the `demo.example.com` is used, then each backend added will use it as their base domain. So when adding a backend for the python shapes api you give it the domain in the likes of `python-shapes.demo.example.com`, and for nodejs `nodejs-shapes.demo.example.com`.
+
+Go ahead and configure a domain at Route53 or at any other provider, and point it to the IP address from the previous step.
+
+> **NOTE:** It's important that you add also a wild-card entry in the DNS record to point any sub-domain to the same IP.
+
+
+## FIREWALL SETUP
+
+Ensure that port `80` and `443` are open.
+
+
+## AWS EC2 INSTANCE SETUP
+
+### Install Git
+
+```
+yum install -y git
+```
+
+### SSH Key
+
+If the instance already has one, then just `cat ~/.ssh/id_rsa.pub` and add it to your Gitlab/Github account, otherwise create it first.
+
+### Instance Setup
+
+Traefik, Docker and Docker Compose will be installed and configured by running the bash script in the root of this repo:
 
 ```
 ./aws-ec2-setup.sh
@@ -40,14 +76,15 @@ docker-compose logs --follow traefik
 
 This setup script will let Traefik running and listening for incoming requests on port `80` and `443`, where requests for port `80` will be redirected to port `443`.
 
+
 ## TLS CERTIFICATES
 
-Traefik uses LetsEncrypt to automatically generated and renew TLS certificates for all domains is listening on.
+Traefik uses LetsEncrypt to automatically generated and renew TLS certificates for all domains is listening on, and the will keep the public key unchanged, thus a mobile app can implement certificate pinning against the public key without the concern of having the pin changed at each renewal of the certificate.
 
 
 ## DEPLOY SERVER EXAMPLE
 
-Let's see an example of deploying Python Shapes API backend into the `demo.approov.io`.
+Let's see an example of deploying Python Shapes API backend into an EC2 instance listening at `*.demo.example.com`.
 
 #### Create the folder
 
@@ -58,7 +95,7 @@ mkdir -p ~/backend && cd ~/backend
 #### Clone the repo
 
 ```
-git clone --branch dev-deployment https://github.com/approov/python-flask_approov-shapes-api-server && cd python-flask_approov-shapes-api-server
+git clone https://github.com/approov/python-flask_approov-shapes-api-server && cd python-flask_approov-shapes-api-server
 ```
 
 #### Create the .env file
@@ -72,7 +109,7 @@ cp .env.example .env
 Replace the default domain with your own server domain:
 
 ```bash
-PYTHON_FLASK_SHAPES_DOMAIN=your.domain.com
+PYTHON_FLASK_SHAPES_DOMAIN=python-shapes.demo.example.com
 ```
 
 Replace the dummy Approov secret on it with the one for your Approov account:
@@ -88,7 +125,7 @@ APPROOV_BASE64_SECRET=your-secret-here
 sudo docker-compose up -d
 ```
 
-Now in your browser visit `your.domain.com` to check the server is accepting requests.
+Now in your browser visit `python-shapes.demo.example.com` to check the server is accepting requests.
 
 #### Tail the logs
 
@@ -97,6 +134,8 @@ sudo docker-compose logs -f
 ```
 
 ## ADD A CONTAINER TO TRAEFIK
+
+> **NOTE:** No need to follow this for the above Deploy Server Example. You only need to follow this part when your project doesn't have yet Traekik labels in the `docker-compose.yml` file.
 
 Traefik inspects the labels in all running docker containers to know for what ones needs to proxy requests.
 
@@ -112,10 +151,10 @@ services:
             - "traefik.enable=true"
 
             # The public domain name for your docker container
-            - "traefik.frontend.rule=Host:demo-name.approov.io"
+            - "traefik.frontend.rule=Host:api.demo.example.com"
 
             # Doesn't need to be exactly the same as the domain name.
-            - "traefik.backend=demo-name.approov.io"
+            - "traefik.backend=api.demo.example.com"
 
             # The external docker network that Traefik uses to proxy request to containers.
             - "traefik.docker.network=traefik"
@@ -132,4 +171,4 @@ networks:
 
 ```
 
-With this configuration all requests for `https://demo-name.approov.io` will be proxy by Traefik to the docker container with the backend label `traefik.backend=demo-name.approov.io` on the internal container network port `traefik.port=5000`.
+With this configuration all requests for `https://api.demo.example.com` will be proxy by Traefik to the docker container with the backend label `traefik.backend=api.demo.example.com` on the internal container network port `traefik.port=5000`.
