@@ -28,6 +28,8 @@ Setup_Traefik() {
 
     cd /opt/traefik
 
+    sudo touch acme.json
+
     # Traefik will not create the certificates if we don't fix the permissions
     #  for the file where it stores the LetsEncrypt certificates.
     sudo chmod 600 acme.json
@@ -35,7 +37,23 @@ Setup_Traefik() {
     # Creates a docker network that will be used by Traefik to proxy the requests to the docker containers:
     sudo docker network create traefik || true
 
-    sudo cp .env.example .env
+    if [ ! -f ./.env ]; then
+        printf "\n
+        ===> ERROR:
+
+        Please copy the .env.example file to .env:
+        $ sudo cp ./traefik/.env.example /opt/traefik/.env
+
+        Now customize it to your values with:
+        $ sudo nano /opt/traefik/.env
+
+        Afterwards just re-run the setup again:
+        $ ./aws-ec2-setup.sh
+
+        \n"
+
+        exit 1
+    fi
 
     # Traefik will be listening on port 80 and 443, and proxy the requests to
     #  the associated container for the domain. Check the README for more details.
@@ -69,17 +87,20 @@ Main() {
 
     printf "\n---> TRAEFIK installed at: /opt/traefik <---\n"
 
-    printf "\n## Restart Traefik:\n"
-    printf "sudo docker-compose restart traefik\n"
+    printf "\nFrom /opt/traefik folder you can ran any docker-compose command.\n"
+    printf "\nSome useful examples:\n"
 
     printf "\n## Start Traefik:\n"
     printf "sudo docker-compose up -d traefik\n"
 
+    printf "\n## Restart Traefik:\n"
+    printf "sudo docker-compose restart traefik\n"
+
     printf "\n## Destroy Traefik:\n"
     printf "sudo docker-compose down\n"
 
-    printf "\n## Tailing the Traefik logs in realtime:"
-    printf "\ndocker-compose logs --follow traefik\n"
+    printf "\n## Tailing the Traefik logs in realtime:\n"
+    printf "sudo docker-compose logs --follow traefik\n"
 
     printf "\n---> TRAEFIK is now listening for new docker containers <---\n\n"
 }

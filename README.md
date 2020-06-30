@@ -38,7 +38,32 @@ yum install -y git
 
 If the instance already has one, then just `cat ~/.ssh/id_rsa.pub` and add it to your Gitlab/Github account, otherwise create it first.
 
+
 ### Instance Setup
+
+#### Cloning this repository
+
+Let's start by cloning this repository:
+
+```
+git clone https://github.com/approov/aws-ec2-traefik-setup.git && cd aws-ec2-traefik-setup
+```
+
+#### The Traefik environment file
+
+Creating the `.env` file for Traefik:
+
+```
+sudo mkdir /opt/traefik && sudo cp ./traefik/.env.example /opt/traefik/.env
+```
+
+Customize the `env.` file with your values:
+
+```
+sudo nano /opt/traefik/.env
+```
+
+#### Run the setup
 
 Traefik, Docker and Docker Compose will be installed and configured by running the bash script in the root of this repo:
 
@@ -59,6 +84,10 @@ git version 2.23.3
 
 ---> TRAEFIK installed at: /opt/traefik <---
 
+From /opt/traefik folder you can ran any docker-compose command.
+
+Some useful examples:
+
 ## Restart Traefik:
 sudo docker-compose restart traefik
 
@@ -69,7 +98,7 @@ sudo docker-compose up -d traefik
 sudo docker-compose down
 
 ## Tailing the Traefik logs in realtime:
-docker-compose logs --follow traefik
+sudo docker-compose logs --follow traefik
 
 ---> TRAEFIK is now listening for new docker containers <---
 ```
